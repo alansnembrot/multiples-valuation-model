@@ -247,7 +247,6 @@ def fetch_metrics(ticker_str):
         # Revenue: 2Y CAGR by date
         rev_row              = find_row(inc, "Total Revenue", "Revenue")
         rev_growth, rev_src  = cagr_2y_by_date(rev_row)
-        rev_t0 = sf(rev_row.iloc[0]) if rev_row is not None and len(rev_row) > 0 else None
 
         # EBITDA: 2Y CAGR by date
         ebitda_abs  = sf(info.get("ebitda"))
@@ -255,7 +254,7 @@ def fetch_metrics(ticker_str):
         ebitda_curr = sf(ebitda_row.iloc[0]) if ebitda_row is not None and len(ebitda_row) > 0 else None
         ebitda_growth, ebi_src = cagr_2y_by_date(ebitda_row)
 
-        ebitda_val = ebitda_abs or ebitda_curr   # prefer TTM from info
+        ebitda_val = ebitda_abs or ebitda_curr   
 
         # EBIT / Interest Coverage
         ebit_row = find_row(inc, "EBIT", "Operating Income")
@@ -303,7 +302,7 @@ def fetch_metrics(ticker_str):
         market_cap  = sf(info.get("marketCap"))
         revenue_val = sf(info.get("totalRevenue"))
 
-        # EV/EBITDA and EV/Revenue — Yahoo precalculated (matches Yahoo Finance page)
+        # EV/EBITDA and EV/Revenue — Yahoo precalculated
         ev_ebitda  = to_ratio(info.get("enterpriseToEbitda"),  dec=1)
         ev_revenue = to_ratio(info.get("enterpriseToRevenue"), dec=1)
 
@@ -339,13 +338,10 @@ def fetch_metrics(ticker_str):
             "ROA":             sf(info.get("returnOnAssets")),
             "Revenue Growth":  rev_growth,
             "EBITDA Growth":   ebitda_growth,
-            "_rev_growth_src":    rev_src,
-            "_ebitda_growth_src": ebi_src,
             "Net Debt (M)":    to_millions(net_debt),
             "Net Debt/EBITDA": nd_ebitda,
             "Debt/Equity":     debt_eq,
             "EBIT/Interest":   int_coverage,
-            # Private — valuation formulas only
             "_price":          price,
             "_eps":            eps,
             "_shares":         shares,
@@ -897,7 +893,7 @@ def write_valuation(ws, metrics, target, sector_cfg, target_sector):
         mc.number_format = "#,##0.0"
         mult_cell = f"B{row}"
 
-        # Implied price — hardcoded Yahoo values, same pattern as working v4
+        # Implied price — hardcoded Yahoo values
         # Override: analyst can manually update col C of input rows above
         if ev_based and metric_raw is not None and shares_raw:
             nd = net_debt_raw if net_debt_raw is not None else 0
@@ -905,7 +901,7 @@ def write_valuation(ws, metrics, target, sector_cfg, target_sector):
         elif pe_based and eps_raw is not None:
             price_formula = f'=IF({mult_cell}="","N/A",{eps_raw}*{mult_cell})'
         else:
-            price_formula = '"N/A"'
+            price_formula = "N/A"
 
         pc = ws.cell(row=row, column=3, value=price_formula)
         pc.font = d_font(bold=True, size=11)
@@ -924,7 +920,7 @@ def write_valuation(ws, metrics, target, sector_cfg, target_sector):
     ws.cell(row=row, column=1,
             value="Upside/Downside = Implied Price / Current Price (Yahoo) - 1  "
                   "|  To use adjusted figures, update the Override cells above "
-                  "and re-enter the multiple in col C"
+                  "and re-enter the multiple in col B"
             ).font = d_font(size=8, color="595959")
     ws.row_dimensions[row].height = 14
     ws.freeze_panes = "A2"
